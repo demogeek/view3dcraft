@@ -10,7 +10,7 @@ export const supportedFileTypes = ['.stl', '.obj', '.gltf', '.glb'];
 
 // Helper to determine file type
 export const getFileExtension = (filename: string): string => {
-  return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 1).toLowerCase();
+  return filename.slice(filename.lastIndexOf('.') + 1).toLowerCase();
 };
 
 // Load a 3D model from a file

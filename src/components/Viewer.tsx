@@ -103,9 +103,11 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     
     const loadFile = async () => {
       try {
-        // Validate file type first
+        // Validate file type correctly
         const extension = getFileExtension(file.name);
-        if (!supportedFileTypes.includes(`.${extension}`)) {
+        const validExtensions = supportedFileTypes.map(ext => ext.slice(1)); // Remove the dots
+        
+        if (!validExtensions.includes(extension)) {
           toast({
             title: "Unsupported file format",
             description: `Please upload one of these supported formats: ${supportedFileTypes.join(', ')}`,
@@ -123,7 +125,7 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
           modelRef.current = null;
         }
         
-        console.log(`Starting to load file: ${file.name}`);
+        console.log(`Starting to load file: ${file.name}, extension: ${extension}`);
         
         // Load the new model
         const object = await loadModel(file, (event) => {
@@ -153,7 +155,7 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
         console.error('Error loading model:', error);
         toast({
           title: "Error loading model",
-          description: "There was a problem loading your 3D model.",
+          description: error instanceof Error ? error.message : "There was a problem loading your 3D model.",
           variant: "destructive"
         });
       } finally {
