@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import * as THREE from 'three';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -9,7 +9,7 @@ import {
   addGrid,
   changeModelColor
 } from '@/lib/three-utils';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 interface ViewerProps {
   file: File | null;
@@ -17,7 +17,7 @@ interface ViewerProps {
   onLoadingChange: (isLoading: boolean) => void;
 }
 
-const Viewer: React.FC<ViewerProps> = ({ file, onModelLoaded, onLoadingChange }) => {
+const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingChange }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -29,6 +29,14 @@ const Viewer: React.FC<ViewerProps> = ({ file, onModelLoaded, onLoadingChange })
   
   const { toast } = useToast();
   const [isGridVisible, setIsGridVisible] = useState(true);
+
+  // Expose methods to parent component through ref
+  useImperativeHandle(ref, () => ({
+    resetView: () => resetView(),
+    toggleGrid: () => toggleGrid(),
+    downloadModel: () => downloadModel(),
+    changeModelColorHandler: (color: string) => changeModelColorHandler(color)
+  }));
 
   // Initialize scene
   useEffect(() => {
@@ -217,6 +225,8 @@ const Viewer: React.FC<ViewerProps> = ({ file, onModelLoaded, onLoadingChange })
       </div>
     </div>
   );
-};
+});
+
+Viewer.displayName = 'Viewer';
 
 export default Viewer;

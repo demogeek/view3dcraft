@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CubeIcon } from 'lucide-react';
+import { Cube } from 'lucide-react';
 
 interface LoadingScreenProps {
   isLoading: boolean;
@@ -14,7 +14,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ isLoading }) => {
     >
       <div className="flex flex-col items-center justify-center">
         <div className="relative mb-4">
-          <CubeIcon size={48} className="text-primary animate-float" />
+          <Cube size={48} className="text-primary animate-float" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-rotate-loader"></div>
           </div>

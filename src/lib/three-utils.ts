@@ -1,9 +1,9 @@
 
 import * as THREE from 'three';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // File types we support
 export const supportedFileTypes = ['.stl', '.obj', '.gltf', '.glb'];
@@ -90,7 +90,7 @@ export const loadModel = async (
 // Center model and adjust camera
 export const centerModel = (
   object: THREE.Object3D,
-  camera: THREE.Camera,
+  camera: THREE.PerspectiveCamera,
   controls: OrbitControls
 ): void => {
   // Calculate bounding box
@@ -109,7 +109,7 @@ export const centerModel = (
 
   // Position camera based on bounding box
   const maxDim = Math.max(size.x, size.y, size.z);
-  const fov = camera instanceof THREE.PerspectiveCamera ? camera.fov : 45;
+  const fov = camera.fov;
   const cameraZ = maxDim / 2 / Math.tan((fov * Math.PI) / 360);
 
   // Set camera position and look at center
@@ -197,10 +197,14 @@ export const changeModelColor = (object: THREE.Object3D, color: THREE.Color) => 
   object.traverse((child) => {
     if (child instanceof THREE.Mesh) {
       if (child.material instanceof THREE.Material) {
-        child.material.color = color;
+        if ('color' in child.material) {
+          (child.material as THREE.MeshStandardMaterial).color = color;
+        }
       } else if (Array.isArray(child.material)) {
         child.material.forEach((material) => {
-          material.color = color;
+          if ('color' in material) {
+            (material as THREE.MeshStandardMaterial).color = color;
+          }
         });
       }
     }
