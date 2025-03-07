@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import * as THREE from 'three';
 import { useToast } from '@/components/ui/use-toast';
@@ -41,7 +40,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
   const [isGridVisible, setIsGridVisible] = useState(true);
   const [cameraType, setCameraType] = useState<string>('perspective');
 
-  // Expose methods to parent component through ref
   useImperativeHandle(ref, () => ({
     resetView: () => resetView(),
     toggleGrid: () => toggleGrid(),
@@ -57,11 +55,9 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     getCameraType: () => cameraType
   }));
 
-  // Initialize scene
   useEffect(() => {
     if (!containerRef.current) return;
     
-    // Setup scene
     const {
       scene,
       camera,
@@ -75,17 +71,13 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     rendererRef.current = renderer;
     controlsRef.current = controls;
     
-    // Add grid
     gridRef.current = addGrid(scene);
     
-    // Add axes helper
     axesHelperRef.current = addAxesHelper(scene);
     
-    // Start animation loop
     const animationId = requestAnimationFrame(animate);
     animationFrameRef.current = animationId;
     
-    // Clean up on unmount
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -100,7 +92,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     };
   }, []);
   
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (!containerRef.current || !cameraRef.current || !rendererRef.current) return;
@@ -110,7 +101,7 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
       
       if (cameraRef.current.type === 'PerspectiveCamera') {
         (cameraRef.current as THREE.PerspectiveCamera).aspect = width / height;
-        cameraRef.current.updateProjectionMatrix();
+        (cameraRef.current as THREE.PerspectiveCamera).updateProjectionMatrix();
       } else if (cameraRef.current.type === 'OrthographicCamera') {
         const orthoCamera = cameraRef.current as THREE.OrthographicCamera;
         const frustumSize = 5;
@@ -129,15 +120,13 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Load model when file changes
   useEffect(() => {
     if (!file || !sceneRef.current || !cameraRef.current || !controlsRef.current) return;
     
     const loadFile = async () => {
       try {
-        // Validate file type correctly
         const extension = getFileExtension(file.name);
-        const validExtensions = supportedFileTypes.map(ext => ext.slice(1)); // Remove the dots
+        const validExtensions = supportedFileTypes.map(ext => ext.slice(1));
         
         if (!validExtensions.includes(extension)) {
           toast({
@@ -151,7 +140,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
 
         onLoadingChange(true);
         
-        // Remove previous model if it exists
         if (modelRef.current) {
           sceneRef.current?.remove(modelRef.current);
           modelRef.current = null;
@@ -159,24 +147,18 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
         
         console.log(`Starting to load file: ${file.name}, extension: ${extension}`);
         
-        // Load the new model
         const object = await loadModel(file, (event) => {
-          // Handle loading progress if needed
           console.log(`Loading: ${Math.round((event.loaded / event.total) * 100)}%`);
         });
         
         console.log(`Model loaded successfully: ${object.uuid}`);
         
-        // Add to scene
         sceneRef.current?.add(object);
         
-        // Save reference
         modelRef.current = object;
         
-        // Center model
         centerModel(object, cameraRef.current as THREE.PerspectiveCamera, controlsRef.current);
         
-        // Notify parent
         onModelLoaded();
         
         toast({
@@ -198,19 +180,15 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     loadFile();
   }, [file, onModelLoaded, onLoadingChange, toast]);
   
-  // Reset view to default
   const resetView = () => {
     if (!cameraRef.current || !controlsRef.current || !modelRef.current) return;
     
-    // Reset camera and controls
     centerModel(modelRef.current, cameraRef.current as THREE.PerspectiveCamera, controlsRef.current);
   };
 
-  // Fit model to window
   const fitToWindowHandler = () => {
     if (!modelRef.current || !cameraRef.current || !controlsRef.current) return;
     
-    // Reset view which includes centering and fitting
     resetView();
     
     toast({
@@ -219,7 +197,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Toggle grid visibility
   const toggleGrid = () => {
     if (!gridRef.current) return;
     
@@ -233,7 +210,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Change model color
   const changeModelColorHandler = (colorHex: string) => {
     if (!modelRef.current) return;
     
@@ -246,24 +222,20 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Change model material
   const changeModelMaterialHandler = (materialType: string) => {
     if (!modelRef.current) return;
     
-    // Get current color from the model
-    let currentColor = new THREE.Color(0xC0C0C0); // Default color
+    let currentColor = new THREE.Color(0xC0C0C0);
     
-    // Try to extract current color from the model
     modelRef.current.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
         if ('color' in child.material && child.material.color instanceof THREE.Color) {
           currentColor = (child.material as THREE.MeshStandardMaterial).color.clone();
-          return; // Stop after finding first color
+          return;
         }
       }
     });
     
-    // Apply the new material with the same color
     applyMaterial(modelRef.current, materialType, currentColor);
     
     toast({
@@ -272,7 +244,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Set Y-Axis Up
   const setYAxisUpHandler = () => {
     if (!modelRef.current) return;
     
@@ -284,7 +255,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Flip Z-Axis
   const flipZAxisHandler = () => {
     if (!modelRef.current) return;
     
@@ -296,7 +266,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Toggle camera type between perspective and orthographic
   const toggleCameraTypeHandler = () => {
     if (!containerRef.current || !cameraRef.current || !controlsRef.current || !rendererRef.current) return;
     
@@ -307,11 +276,9 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
       rendererRef.current
     );
     
-    // Update refs with new camera and controls
     cameraRef.current = camera;
     controlsRef.current = controls;
     
-    // Update camera type state
     setCameraType(camera.type === 'PerspectiveCamera' ? 'perspective' : 'orthographic');
     
     toast({
@@ -320,7 +287,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Calculate surface area
   const calculateAreaHandler = () => {
     if (!modelRef.current) return;
     
@@ -332,25 +298,21 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     });
   };
   
-  // Export model to a different format
   const exportModelHandler = async (format: string): Promise<void> => {
     if (!modelRef.current || !file) return Promise.reject(new Error('No model to export'));
     
     try {
       const blob = await exportModel(modelRef.current, format, file.name);
       
-      // Create download link
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
       link.download = `${originalName}.${format}`;
       
-      // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Clean up
       setTimeout(() => {
         URL.revokeObjectURL(link.href);
       }, 100);
@@ -362,22 +324,18 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     }
   };
   
-  // Download the current model
   const downloadModel = () => {
     if (!file) return Promise.reject(new Error('No model to download'));
     
     return new Promise<void>((resolve) => {
-      // Create download link
       const link = document.createElement('a');
       link.href = URL.createObjectURL(file);
       link.download = file.name;
       
-      // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Clean up
       setTimeout(() => {
         URL.revokeObjectURL(link.href);
         resolve();
@@ -387,7 +345,6 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
   
   return (
     <div ref={containerRef} id="canvas-container" className="relative">
-      {/* Controls for handling model interactions */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <button 
           className="control-button"
