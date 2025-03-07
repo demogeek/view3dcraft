@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
 import FileUpload from '@/components/FileUpload';
 import ModelControls from '@/components/ModelControls';
@@ -10,6 +10,7 @@ const Index = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [cameraType, setCameraType] = useState('perspective');
   const viewerRef = useRef<any>(null);
 
   const handleFileSelected = (selectedFile: File) => {
@@ -45,6 +46,60 @@ const Index = () => {
       viewerRef.current.changeModelColorHandler(color);
     }
   };
+  
+  const handleChangeMaterial = (material: string) => {
+    if (viewerRef.current && viewerRef.current.changeModelMaterialHandler) {
+      viewerRef.current.changeModelMaterialHandler(material);
+    }
+  };
+  
+  const handleExportModel = (format: string) => {
+    if (viewerRef.current && viewerRef.current.exportModelHandler) {
+      return viewerRef.current.exportModelHandler(format);
+    }
+    return Promise.reject(new Error('Export not available'));
+  };
+  
+  const handleCalculateArea = () => {
+    if (viewerRef.current && viewerRef.current.calculateAreaHandler) {
+      viewerRef.current.calculateAreaHandler();
+    }
+  };
+  
+  const handleSetYAxisUp = () => {
+    if (viewerRef.current && viewerRef.current.setYAxisUpHandler) {
+      viewerRef.current.setYAxisUpHandler();
+    }
+  };
+  
+  const handleFlipZAxis = () => {
+    if (viewerRef.current && viewerRef.current.flipZAxisHandler) {
+      viewerRef.current.flipZAxisHandler();
+    }
+  };
+  
+  const handleToggleCameraType = () => {
+    if (viewerRef.current && viewerRef.current.toggleCameraTypeHandler) {
+      viewerRef.current.toggleCameraTypeHandler();
+      // Update the camera type state
+      if (viewerRef.current.getCameraType) {
+        setCameraType(viewerRef.current.getCameraType());
+      }
+    }
+  };
+  
+  const handleFitToWindow = () => {
+    if (viewerRef.current && viewerRef.current.fitToWindowHandler) {
+      viewerRef.current.fitToWindowHandler();
+    }
+  };
+
+  useEffect(() => {
+    // Check if viewer ref is available and get camera type
+    if (viewerRef.current && viewerRef.current.getCameraType) {
+      setCameraType(viewerRef.current.getCameraType());
+    }
+  }, [isModelLoaded]);
 
   return (
     <div className="min-h-screen w-full overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100">
@@ -75,6 +130,14 @@ const Index = () => {
                 onToggleGrid={handleToggleGrid}
                 onDownload={handleDownload}
                 onChangeColor={handleChangeColor}
+                onChangeMaterial={handleChangeMaterial}
+                onExportModel={handleExportModel}
+                onCalculateArea={handleCalculateArea}
+                onSetYAxisUp={handleSetYAxisUp}
+                onFlipZAxis={handleFlipZAxis}
+                onToggleCameraType={handleToggleCameraType}
+                onFitToWindow={handleFitToWindow}
+                cameraType={cameraType}
               />
             )}
           </div>

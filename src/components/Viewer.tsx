@@ -7,9 +7,16 @@ import {
   setupScene,
   centerModel,
   addGrid,
+  addAxesHelper,
   changeModelColor,
+  applyMaterial,
   getFileExtension,
-  supportedFileTypes
+  supportedFileTypes,
+  exportModel,
+  calculateSurfaceArea,
+  setYAxisUp,
+  flipZAxis,
+  toggleCameraType
 } from '@/lib/three-utils';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -22,22 +29,32 @@ interface ViewerProps {
 const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingChange }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const modelRef = useRef<THREE.Object3D | null>(null);
   const gridRef = useRef<THREE.GridHelper | null>(null);
+  const axesHelperRef = useRef<THREE.AxesHelper | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   
   const { toast } = useToast();
   const [isGridVisible, setIsGridVisible] = useState(true);
+  const [cameraType, setCameraType] = useState<string>('perspective');
 
   // Expose methods to parent component through ref
   useImperativeHandle(ref, () => ({
     resetView: () => resetView(),
     toggleGrid: () => toggleGrid(),
     downloadModel: () => downloadModel(),
-    changeModelColorHandler: (color: string) => changeModelColorHandler(color)
+    changeModelColorHandler: (color: string) => changeModelColorHandler(color),
+    changeModelMaterialHandler: (material: string) => changeModelMaterialHandler(material),
+    exportModelHandler: (format: string) => exportModelHandler(format),
+    calculateAreaHandler: () => calculateAreaHandler(),
+    setYAxisUpHandler: () => setYAxisUpHandler(),
+    flipZAxisHandler: () => flipZAxisHandler(),
+    toggleCameraTypeHandler: () => toggleCameraTypeHandler(),
+    fitToWindowHandler: () => fitToWindowHandler(),
+    getCameraType: () => cameraType
   }));
 
   // Initialize scene
@@ -60,6 +77,9 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     
     // Add grid
     gridRef.current = addGrid(scene);
+    
+    // Add axes helper
+    axesHelperRef.current = addAxesHelper(scene);
     
     // Start animation loop
     const animationId = requestAnimationFrame(animate);
@@ -88,8 +108,20 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
       const width = containerRef.current.clientWidth;
       const height = containerRef.current.clientHeight;
       
-      cameraRef.current.aspect = width / height;
-      cameraRef.current.updateProjectionMatrix();
+      if (cameraRef.current.type === 'PerspectiveCamera') {
+        (cameraRef.current as THREE.PerspectiveCamera).aspect = width / height;
+        cameraRef.current.updateProjectionMatrix();
+      } else if (cameraRef.current.type === 'OrthographicCamera') {
+        const orthoCamera = cameraRef.current as THREE.OrthographicCamera;
+        const frustumSize = 5;
+        const aspect = width / height;
+        orthoCamera.left = frustumSize * aspect / -2;
+        orthoCamera.right = frustumSize * aspect / 2;
+        orthoCamera.top = frustumSize / 2;
+        orthoCamera.bottom = frustumSize / -2;
+        orthoCamera.updateProjectionMatrix();
+      }
+      
       rendererRef.current.setSize(width, height);
     };
     
@@ -142,7 +174,7 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
         modelRef.current = object;
         
         // Center model
-        centerModel(object, cameraRef.current, controlsRef.current);
+        centerModel(object, cameraRef.current as THREE.PerspectiveCamera, controlsRef.current);
         
         // Notify parent
         onModelLoaded();
@@ -171,7 +203,20 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     if (!cameraRef.current || !controlsRef.current || !modelRef.current) return;
     
     // Reset camera and controls
-    centerModel(modelRef.current, cameraRef.current, controlsRef.current);
+    centerModel(modelRef.current, cameraRef.current as THREE.PerspectiveCamera, controlsRef.current);
+  };
+
+  // Fit model to window
+  const fitToWindowHandler = () => {
+    if (!modelRef.current || !cameraRef.current || !controlsRef.current) return;
+    
+    // Reset view which includes centering and fitting
+    resetView();
+    
+    toast({
+      title: "View Reset",
+      description: "Model has been centered and fitted to the view.",
+    });
   };
   
   // Toggle grid visibility
@@ -181,6 +226,11 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     const newVisibility = !isGridVisible;
     gridRef.current.visible = newVisibility;
     setIsGridVisible(newVisibility);
+    
+    toast({
+      title: `Grid ${newVisibility ? 'Shown' : 'Hidden'}`,
+      description: `The grid has been ${newVisibility ? 'enabled' : 'disabled'}.`,
+    });
   };
   
   // Change model color
@@ -189,6 +239,127 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     
     const color = new THREE.Color(colorHex);
     changeModelColor(modelRef.current, color);
+    
+    toast({
+      title: "Color Changed",
+      description: "The model color has been updated.",
+    });
+  };
+  
+  // Change model material
+  const changeModelMaterialHandler = (materialType: string) => {
+    if (!modelRef.current) return;
+    
+    // Get current color from the model
+    let currentColor = new THREE.Color(0xC0C0C0); // Default color
+    
+    // Try to extract current color from the model
+    modelRef.current.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
+        if ('color' in child.material && child.material.color instanceof THREE.Color) {
+          currentColor = (child.material as THREE.MeshStandardMaterial).color.clone();
+          return; // Stop after finding first color
+        }
+      }
+    });
+    
+    // Apply the new material with the same color
+    applyMaterial(modelRef.current, materialType, currentColor);
+    
+    toast({
+      title: "Material Changed",
+      description: `Applied ${materialType} material to the model.`,
+    });
+  };
+  
+  // Set Y-Axis Up
+  const setYAxisUpHandler = () => {
+    if (!modelRef.current) return;
+    
+    setYAxisUp(modelRef.current);
+    
+    toast({
+      title: "Orientation Changed",
+      description: "Y-axis is now set as up vector.",
+    });
+  };
+  
+  // Flip Z-Axis
+  const flipZAxisHandler = () => {
+    if (!modelRef.current) return;
+    
+    flipZAxis(modelRef.current);
+    
+    toast({
+      title: "Orientation Changed",
+      description: "Z-axis has been flipped.",
+    });
+  };
+  
+  // Toggle camera type between perspective and orthographic
+  const toggleCameraTypeHandler = () => {
+    if (!containerRef.current || !cameraRef.current || !controlsRef.current || !rendererRef.current) return;
+    
+    const { camera, controls } = toggleCameraType(
+      containerRef.current,
+      cameraRef.current,
+      controlsRef.current,
+      rendererRef.current
+    );
+    
+    // Update refs with new camera and controls
+    cameraRef.current = camera;
+    controlsRef.current = controls;
+    
+    // Update camera type state
+    setCameraType(camera.type === 'PerspectiveCamera' ? 'perspective' : 'orthographic');
+    
+    toast({
+      title: "Camera Changed",
+      description: `Switched to ${camera.type === 'PerspectiveCamera' ? 'perspective' : 'orthographic'} camera.`,
+    });
+  };
+  
+  // Calculate surface area
+  const calculateAreaHandler = () => {
+    if (!modelRef.current) return;
+    
+    const area = calculateSurfaceArea(modelRef.current);
+    
+    toast({
+      title: "Surface Area",
+      description: `The model has a surface area of ${area.toFixed(2)} square units.`,
+    });
+  };
+  
+  // Export model to a different format
+  const exportModelHandler = async (format: string): Promise<void> => {
+    if (!modelRef.current || !file) return Promise.reject(new Error('No model to export'));
+    
+    try {
+      const blob = await exportModel(modelRef.current, format, file.name);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      link.download = `${originalName}.${format}`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+      }, 100);
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Error exporting model:', error);
+      return Promise.reject(error);
+    }
   };
   
   // Download the current model
