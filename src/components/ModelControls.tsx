@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RotateCw,
   MoveDiagonal,
@@ -13,7 +13,8 @@ import {
   ArrowDown,
   Camera,
   Ruler,
-  FileOutput
+  FileOutput,
+  Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -37,7 +38,8 @@ interface ModelControlsProps {
   onChangeColor?: (color: string) => void;
   onChangeMaterial?: (material: string) => void;
   onExportModel?: (format: string) => Promise<void>;
-  onCalculateArea?: () => void;
+  onCalculateArea?: () => { totalArea: number, meshNames: string[] } | void;
+  onCalculatePartArea?: (partName: string) => number;
   onSetYAxisUp?: () => void;
   onFlipZAxis?: () => void;
   onToggleCameraType?: () => void;
@@ -54,6 +56,7 @@ const ModelControls: React.FC<ModelControlsProps> = ({
   onChangeMaterial,
   onExportModel,
   onCalculateArea,
+  onCalculatePartArea,
   onSetYAxisUp,
   onFlipZAxis,
   onToggleCameraType,
@@ -63,7 +66,21 @@ const ModelControls: React.FC<ModelControlsProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState('stl');
+  const [partNames, setPartNames] = useState<string[]>([]);
+  const [selectedPart, setSelectedPart] = useState<string>('');
   const { toast } = useToast();
+  
+  useEffect(() => {
+    if (isModelLoaded && onCalculateArea) {
+      const result = onCalculateArea();
+      if (result && result.meshNames) {
+        setPartNames(result.meshNames);
+        if (result.meshNames.length > 0) {
+          setSelectedPart(result.meshNames[0]);
+        }
+      }
+    }
+  }, [isModelLoaded, onCalculateArea]);
   
   const colorOptions = [
     { label: 'Silver', value: '#C0C0C0' },
@@ -119,6 +136,12 @@ const ModelControls: React.FC<ModelControlsProps> = ({
   const handleCalculateArea = () => {
     if (onCalculateArea) {
       onCalculateArea();
+    }
+  };
+  
+  const handleCalculatePartArea = () => {
+    if (onCalculatePartArea && selectedPart) {
+      onCalculatePartArea(selectedPart);
     }
   };
 
@@ -340,8 +363,43 @@ const ModelControls: React.FC<ModelControlsProps> = ({
               onClick={handleCalculateArea}
               disabled={!onCalculateArea}
             >
-              Calculate Surface Area
+              Calculate Total Surface Area
             </Button>
+            
+            {partNames.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <label className="text-xs font-medium flex items-center gap-1.5">
+                  <Layers size={14} />
+                  Parts
+                </label>
+                
+                <Select 
+                  value={selectedPart} 
+                  onValueChange={setSelectedPart}
+                  disabled={partNames.length === 0}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select part" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {partNames.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Button 
+                  variant="outline"
+                  className="w-full mt-2"
+                  onClick={handleCalculatePartArea}
+                  disabled={!selectedPart || !onCalculatePartArea}
+                >
+                  Calculate Part Area
+                </Button>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>

@@ -48,6 +48,7 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     changeModelMaterialHandler: (material: string) => changeModelMaterialHandler(material),
     exportModelHandler: (format: string) => exportModelHandler(format),
     calculateAreaHandler: () => calculateAreaHandler(),
+    calculatePartAreaHandler: (partName: string) => calculatePartAreaHandler(partName),
     setYAxisUpHandler: () => setYAxisUpHandler(),
     flipZAxisHandler: () => flipZAxisHandler(),
     toggleCameraTypeHandler: () => toggleCameraTypeHandler(),
@@ -290,12 +291,61 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
   const calculateAreaHandler = () => {
     if (!modelRef.current) return;
     
-    const area = calculateSurfaceArea(modelRef.current);
+    const meshNames: string[] = [];
+    const totalArea = calculateSurfaceArea(modelRef.current);
     
-    toast({
-      title: "Surface Area",
-      description: `The model has a surface area of ${area.toFixed(2)} square units.`,
+    modelRef.current.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.name) {
+        meshNames.push(child.name);
+      }
     });
+    
+    if (meshNames.length > 1) {
+      toast({
+        title: "Total Surface Area",
+        description: `The model has a total surface area of ${totalArea.toFixed(2)} square units.`,
+      });
+      
+      toast({
+        title: "Model Parts",
+        description: `Found ${meshNames.length} named parts. Select individual parts in the Measure tab.`,
+      });
+    } else {
+      toast({
+        title: "Surface Area",
+        description: `The model has a surface area of ${totalArea.toFixed(2)} square units.`,
+      });
+    }
+    
+    return {
+      totalArea,
+      meshNames
+    };
+  };
+  
+  const calculatePartAreaHandler = (partName: string) => {
+    if (!modelRef.current) return 0;
+    
+    let partMesh: THREE.Mesh | null = null;
+    
+    modelRef.current.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.name === partName) {
+        partMesh = child;
+      }
+    });
+    
+    if (partMesh) {
+      const area = calculateSurfaceArea(partMesh);
+      
+      toast({
+        title: `Surface Area: ${partName}`,
+        description: `This part has a surface area of ${area.toFixed(2)} square units.`,
+      });
+      
+      return area;
+    }
+    
+    return 0;
   };
   
   const exportModelHandler = async (format: string): Promise<void> => {

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
 import FileUpload from '@/components/FileUpload';
@@ -62,8 +61,15 @@ const Index = () => {
   
   const handleCalculateArea = () => {
     if (viewerRef.current && viewerRef.current.calculateAreaHandler) {
-      viewerRef.current.calculateAreaHandler();
+      return viewerRef.current.calculateAreaHandler();
     }
+  };
+  
+  const handleCalculatePartArea = (partName: string) => {
+    if (viewerRef.current && viewerRef.current.calculatePartAreaHandler) {
+      return viewerRef.current.calculatePartAreaHandler(partName);
+    }
+    return 0;
   };
   
   const handleSetYAxisUp = () => {
@@ -81,7 +87,6 @@ const Index = () => {
   const handleToggleCameraType = () => {
     if (viewerRef.current && viewerRef.current.toggleCameraTypeHandler) {
       viewerRef.current.toggleCameraTypeHandler();
-      // Update the camera type state
       if (viewerRef.current.getCameraType) {
         setCameraType(viewerRef.current.getCameraType());
       }
@@ -95,7 +100,6 @@ const Index = () => {
   };
 
   useEffect(() => {
-    // Check if viewer ref is available and get camera type
     if (viewerRef.current && viewerRef.current.getCameraType) {
       setCameraType(viewerRef.current.getCameraType());
     }
@@ -103,15 +107,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full overflow-hidden bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Loading screen */}
       <LoadingScreen isLoading={isLoading} />
 
-      {/* Main content */}
       <div className="container mx-auto px-4 py-6 flex flex-col h-screen relative z-10">
         <Header />
         
         <main className="flex-1 flex flex-col lg:flex-row gap-8 items-center lg:items-start">
-          {/* Left sidebar - Controls */}
           <div className="w-full lg:w-64 flex flex-col items-center z-20">
             {!isModelLoaded && (
               <div className="glass-panel rounded-2xl p-6 mb-6 w-full max-w-xs animate-slide-in">
@@ -133,6 +134,7 @@ const Index = () => {
                 onChangeMaterial={handleChangeMaterial}
                 onExportModel={handleExportModel}
                 onCalculateArea={handleCalculateArea}
+                onCalculatePartArea={handleCalculatePartArea}
                 onSetYAxisUp={handleSetYAxisUp}
                 onFlipZAxis={handleFlipZAxis}
                 onToggleCameraType={handleToggleCameraType}
@@ -142,7 +144,6 @@ const Index = () => {
             )}
           </div>
           
-          {/* Main viewport */}
           <div className="flex-1 relative w-full h-full min-h-[500px] lg:min-h-0 rounded-2xl overflow-hidden shadow-xl">
             <Viewer 
               file={file}
@@ -182,7 +183,6 @@ const Index = () => {
           </div>
         </main>
         
-        {/* Footer */}
         <footer className="mt-8 mb-4 text-center text-sm text-gray-500">
           <p>View3DCraft © {new Date().getFullYear()} | A powerful 3D model viewer for the web</p>
         </footer>
