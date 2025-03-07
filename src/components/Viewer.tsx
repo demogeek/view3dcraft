@@ -7,7 +7,9 @@ import {
   setupScene,
   centerModel,
   addGrid,
-  changeModelColor
+  changeModelColor,
+  getFileExtension,
+  supportedFileTypes
 } from '@/lib/three-utils';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -101,6 +103,18 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
     
     const loadFile = async () => {
       try {
+        // Validate file type first
+        const extension = getFileExtension(file.name);
+        if (!supportedFileTypes.includes(`.${extension}`)) {
+          toast({
+            title: "Unsupported file format",
+            description: `Please upload one of these supported formats: ${supportedFileTypes.join(', ')}`,
+            variant: "destructive"
+          });
+          onLoadingChange(false);
+          return;
+        }
+
         onLoadingChange(true);
         
         // Remove previous model if it exists
@@ -109,11 +123,15 @@ const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingCha
           modelRef.current = null;
         }
         
+        console.log(`Starting to load file: ${file.name}`);
+        
         // Load the new model
         const object = await loadModel(file, (event) => {
           // Handle loading progress if needed
           console.log(`Loading: ${Math.round((event.loaded / event.total) * 100)}%`);
         });
+        
+        console.log(`Model loaded successfully: ${object.uuid}`);
         
         // Add to scene
         sceneRef.current?.add(object);

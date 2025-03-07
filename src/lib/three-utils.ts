@@ -1,3 +1,4 @@
+
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
@@ -17,8 +18,11 @@ export const loadModel = async (
   file: File,
   onProgress?: (event: ProgressEvent) => void
 ): Promise<THREE.Object3D> => {
+  // Get the file extension without the dot
   const extension = getFileExtension(file.name);
   const fileURL = URL.createObjectURL(file);
+  
+  console.log(`Loading file: ${file.name}, detected extension: ${extension}`);
 
   return new Promise<THREE.Object3D>((resolve, reject) => {
     let loader;
@@ -38,7 +42,10 @@ export const loadModel = async (
             resolve(mesh);
           },
           onProgress,
-          reject
+          (error) => {
+            console.error('Error loading STL:', error);
+            reject(error);
+          }
         );
         break;
 
@@ -60,7 +67,10 @@ export const loadModel = async (
             resolve(object);
           },
           onProgress,
-          reject
+          (error) => {
+            console.error('Error loading OBJ:', error);
+            reject(error);
+          }
         );
         break;
 
@@ -73,12 +83,16 @@ export const loadModel = async (
             resolve(gltf.scene);
           },
           onProgress,
-          reject
+          (error) => {
+            console.error('Error loading GLTF/GLB:', error);
+            reject(error);
+          }
         );
         break;
 
       default:
-        reject(new Error(`Unsupported file type: ${extension}`));
+        console.error(`Unsupported file type: .${extension}`);
+        reject(new Error(`Unsupported file type: .${extension}`));
         // Return a default object to satisfy TypeScript
         const defaultObject = new THREE.Object3D();
         defaultObject.name = "error-object";
@@ -146,7 +160,7 @@ export const setupScene = (container: HTMLElement): {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.outputColorSpace = THREE.SRGBColorSpace; // Using outputColorSpace instead of deprecated outputEncoding
   container.appendChild(renderer.domElement);
 
   // Add lighting
@@ -200,12 +214,14 @@ export const changeModelColor = (object: THREE.Object3D, color: THREE.Color) => 
   object.traverse((child) => {
     if (child instanceof THREE.Mesh) {
       if (child.material instanceof THREE.Material) {
-        if ('color' in child.material) {
+        // Type guard to check if material has color property
+        if ('color' in child.material && child.material.color instanceof THREE.Color) {
           (child.material as THREE.MeshStandardMaterial).color = color;
         }
       } else if (Array.isArray(child.material)) {
         child.material.forEach((material) => {
-          if ('color' in material) {
+          // Type guard to check if material has color property
+          if ('color' in material && material.color instanceof THREE.Color) {
             (material as THREE.MeshStandardMaterial).color = color;
           }
         });
