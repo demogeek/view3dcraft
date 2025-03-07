@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
@@ -21,7 +20,7 @@ export const loadModel = async (
   const extension = getFileExtension(file.name);
   const fileURL = URL.createObjectURL(file);
 
-  return new Promise((resolve, reject) => {
+  return new Promise<THREE.Object3D>((resolve, reject) => {
     let loader;
     
     switch (extension) {
@@ -80,6 +79,10 @@ export const loadModel = async (
 
       default:
         reject(new Error(`Unsupported file type: ${extension}`));
+        // Return a default object to satisfy TypeScript
+        const defaultObject = new THREE.Object3D();
+        defaultObject.name = "error-object";
+        resolve(defaultObject);
     }
   }).finally(() => {
     // Clean up the URL when done

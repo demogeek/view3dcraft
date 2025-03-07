@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { Cube } from 'lucide-react';
+import { Box } from 'lucide-react';
 
 const Header: React.FC = () => {
   return (
     <header className="glass-panel rounded-full px-6 py-3 mb-6 flex items-center justify-between">
       <div className="flex items-center space-x-2">
-        <Cube className="h-5 w-5 text-primary" />
+        <Box className="h-5 w-5 text-primary" />
         <span className="font-medium text-lg">View3DCraft</span>
       </div>
       
