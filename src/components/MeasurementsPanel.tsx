@@ -25,6 +25,14 @@ const MeasurementsPanel: React.FC<MeasurementsPanelProps> = ({
 }) => {
   if (!visible) return null;
 
+  // Format number with 2 decimal places safely
+  const formatNumber = (value: number | undefined): string => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return "N/A";
+    }
+    return value.toFixed(2);
+  };
+
   return (
     <div className="absolute bottom-6 right-6 glass-panel p-4 rounded-xl bg-white/90 backdrop-blur-md shadow-lg border border-gray-200 w-64 transform transition-all z-30">
       <h3 className="font-medium mb-3 flex items-center text-gray-800">
@@ -39,7 +47,7 @@ const MeasurementsPanel: React.FC<MeasurementsPanelProps> = ({
               Total Surface Area
             </span>
             <span className="text-sm font-medium bg-blue-50 px-2 py-0.5 rounded text-blue-700">
-              {surfaceArea.toFixed(2)} mm²
+              {formatNumber(surfaceArea)} mm²
             </span>
           </div>
         )}
@@ -57,7 +65,7 @@ const MeasurementsPanel: React.FC<MeasurementsPanelProps> = ({
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs text-gray-600">Surface Area</span>
                 <span className="text-xs font-medium bg-purple-50 px-2 py-0.5 rounded text-purple-700">
-                  {selectedPartArea.toFixed(2)} mm²
+                  {formatNumber(selectedPartArea)} mm²
                 </span>
               </div>
             )}
@@ -66,7 +74,7 @@ const MeasurementsPanel: React.FC<MeasurementsPanelProps> = ({
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs text-gray-600">Volume</span>
                 <span className="text-xs font-medium bg-purple-50 px-2 py-0.5 rounded text-purple-700">
-                  {selectedPartVolume.toFixed(2)} mm³
+                  {formatNumber(selectedPartVolume)} mm³
                 </span>
               </div>
             )}
@@ -75,7 +83,7 @@ const MeasurementsPanel: React.FC<MeasurementsPanelProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-600">Dimensions</span>
                 <span className="text-xs font-medium bg-purple-50 px-2 py-0.5 rounded text-purple-700">
-                  {selectedPartDimensions.width.toFixed(1)} × {selectedPartDimensions.height.toFixed(1)} × {selectedPartDimensions.depth.toFixed(1)} mm
+                  {formatNumber(selectedPartDimensions.width)} × {formatNumber(selectedPartDimensions.height)} × {formatNumber(selectedPartDimensions.depth)} mm
                 </span>
               </div>
             )}

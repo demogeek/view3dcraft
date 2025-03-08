@@ -32,6 +32,29 @@ export const getSavedModels = (): StoredModel[] => {
 };
 
 /**
+ * Check available storage space before saving
+ * Returns boolean indicating if there's likely enough space
+ */
+export const checkStorageSpace = (fileSize: number): boolean => {
+  try {
+    // Approximation of available space
+    // This is not 100% accurate but can help prevent quota errors
+    let testKey = 'storage_test';
+    const testValue = '0'.repeat(Math.min(fileSize, 1024 * 500)); // Test with max 500KB to avoid errors
+    
+    try {
+      localStorage.setItem(testKey, testValue);
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
  * Save model metadata to localStorage
  */
 export const saveModelMetadata = (model: StoredModel): void => {
@@ -49,12 +72,20 @@ export const saveModelMetadata = (model: StoredModel): void => {
  */
 export const saveModelFile = (id: string, fileContent: string): void => {
   try {
+    // Check size before attempting to save
+    const contentSize = new Blob([fileContent]).size;
+    if (!checkStorageSpace(contentSize)) {
+      throw new Error('Not enough storage space. Please delete some saved models first.');
+    }
+    
     localStorage.setItem(`${MODEL_FILES_KEY}${id}`, fileContent);
   } catch (error) {
     console.error('Error saving model file:', error);
     // Handle localStorage quota exceeded
     if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
       throw new Error('Storage limit reached. Please delete some saved models to continue.');
+    } else {
+      throw error; // Rethrow other errors
     }
   }
 };

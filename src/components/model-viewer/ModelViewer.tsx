@@ -33,25 +33,52 @@ const ModelViewer = () => {
   const handleModelLoaded = () => {
     setIsModelLoaded(true);
     
-    // Calculate initial surface area
+    // Calculate initial surface area if available
     if (viewerRef.current && viewerRef.current.calculateAreaHandler) {
-      const area = viewerRef.current.calculateAreaHandler();
-      setMeasurements(prev => ({ ...prev, surfaceArea: area }));
+      try {
+        const area = viewerRef.current.calculateAreaHandler();
+        if (typeof area === 'number' && !isNaN(area)) {
+          setMeasurements(prev => ({ ...prev, surfaceArea: area }));
+        } else {
+          // Reset to 0 if not a valid number
+          setMeasurements(prev => ({ ...prev, surfaceArea: 0 }));
+        }
+      } catch (error) {
+        console.error("Error calculating surface area:", error);
+        setMeasurements(prev => ({ ...prev, surfaceArea: 0 }));
+      }
     }
   };
 
   const handleSelectPart = (partName: string) => {
     if (viewerRef.current && viewerRef.current.calculatePartAreaHandler) {
-      const partData = viewerRef.current.calculatePartAreaHandler(partName);
-      if (partData) {
-        setSelectedPartName(partName);
-        setMeasurements(prev => ({ 
-          ...prev, 
-          selectedPartArea: partData.area || 0,
-          selectedPartVolume: partData.volume || 0,
-          selectedPartDimensions: partData.dimensions || { width: 0, height: 0, depth: 0 }
-        }));
-        setShowMeasurements(true);
+      try {
+        const partData = viewerRef.current.calculatePartAreaHandler(partName);
+        if (partData) {
+          setSelectedPartName(partName);
+          
+          // Ensure all values are valid numbers
+          const area = typeof partData.area === 'number' && !isNaN(partData.area) 
+            ? partData.area 
+            : 0;
+            
+          const volume = typeof partData.volume === 'number' && !isNaN(partData.volume) 
+            ? partData.volume 
+            : 0;
+            
+          const dimensions = partData.dimensions || { width: 0, height: 0, depth: 0 };
+          
+          setMeasurements(prev => ({ 
+            ...prev, 
+            selectedPartArea: area,
+            selectedPartVolume: volume,
+            selectedPartDimensions: dimensions
+          }));
+          
+          setShowMeasurements(true);
+        }
+      } catch (error) {
+        console.error("Error calculating part measurements:", error);
       }
     }
   };

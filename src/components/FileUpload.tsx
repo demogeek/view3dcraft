@@ -5,7 +5,7 @@ import { supportedFileTypes } from '@/lib/three-utils';
 import { useToast } from "@/components/ui/use-toast";
 import SavedModels from './SavedModels';
 import { v4 as uuidv4 } from 'uuid';
-import { saveModelMetadata, saveModelFile } from '@/lib/storage-utils';
+import { saveModelMetadata, saveModelFile, checkStorageSpace } from '@/lib/storage-utils';
 
 interface FileUploadProps {
   onFileSelected: (file: File) => void;
@@ -30,6 +30,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelected }) => {
   }, []);
 
   const saveToLocalStorage = (file: File) => {
+    // Check if file size is likely to exceed storage limit
+    if (!checkStorageSpace(file.size)) {
+      toast({
+        title: "Storage limit",
+        description: "The file is too large for local storage. You can still use it but it won't be saved.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
@@ -63,6 +73,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelected }) => {
         }
       }
     };
+    
+    reader.onerror = () => {
+      toast({
+        title: "File error",
+        description: "Failed to read the file. Please try again.",
+        variant: "destructive"
+      });
+    };
+    
     reader.readAsDataURL(file);
   };
 
