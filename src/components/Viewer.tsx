@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import * as THREE from 'three';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,6 +24,7 @@ interface ViewerProps {
   file: File | null;
   onModelLoaded: () => void;
   onLoadingChange: (isLoading: boolean) => void;
+  onPartSelected?: (partName: string) => void; // Added missing prop
 }
 
 const Viewer = forwardRef<any, ViewerProps>(({ file, onModelLoaded, onLoadingChange }, ref) => {
