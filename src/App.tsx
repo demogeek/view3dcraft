@@ -9,8 +9,9 @@ import './App.css';
 import { Toaster } from './components/ui/toaster';
 
 function App() {
+  // Using basename to ensure correct asset path resolution
   return (
-    <Router>
+    <Router basename={import.meta.env.MODE === 'production' ? '/' : '/'}>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/features" element={<Features />} />

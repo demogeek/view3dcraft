@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  base: "./", // Setting the base URL for assets to be relative
   build: {
     // Ensure the build output is properly chunked and named
     rollupOptions: {
@@ -17,7 +18,10 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           three: ['three', '@react-three/fiber', '@react-three/drei']
-        }
+        },
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     },
     // Ensure assets are properly hashed and placed
