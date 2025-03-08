@@ -1,24 +1,44 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
 import FileUpload from '@/components/FileUpload';
 import ModelControls from '@/components/ModelControls';
 import Viewer from '@/components/Viewer';
 import LoadingScreen from '@/components/LoadingScreen';
+import MeasurementsPanel from '@/components/MeasurementsPanel';
+import { generateThumbnail } from '@/lib/storage-utils';
 
 const Index = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [cameraType, setCameraType] = useState('perspective');
+  const [showMeasurements, setShowMeasurements] = useState(false);
+  const [selectedPartName, setSelectedPartName] = useState<string | undefined>();
+  const [measurements, setMeasurements] = useState({
+    surfaceArea: 0,
+    selectedPartArea: 0,
+    selectedPartVolume: 0,
+    selectedPartDimensions: { width: 0, height: 0, depth: 0 }
+  });
+  
   const viewerRef = useRef<any>(null);
 
   const handleFileSelected = (selectedFile: File) => {
     setFile(selectedFile);
     setIsModelLoaded(false);
+    setSelectedPartName(undefined);
+    setShowMeasurements(false);
   };
 
   const handleModelLoaded = () => {
     setIsModelLoaded(true);
+    
+    // Calculate initial surface area
+    if (viewerRef.current && viewerRef.current.calculateAreaHandler) {
+      const area = viewerRef.current.calculateAreaHandler();
+      setMeasurements(prev => ({ ...prev, surfaceArea: area }));
+    }
   };
 
   const handleResetView = () => {
@@ -61,13 +81,28 @@ const Index = () => {
   
   const handleCalculateArea = () => {
     if (viewerRef.current && viewerRef.current.calculateAreaHandler) {
-      return viewerRef.current.calculateAreaHandler();
+      const area = viewerRef.current.calculateAreaHandler();
+      setMeasurements(prev => ({ ...prev, surfaceArea: area }));
+      setShowMeasurements(true);
+      return area;
     }
+    return 0;
   };
   
   const handleCalculatePartArea = (partName: string) => {
     if (viewerRef.current && viewerRef.current.calculatePartAreaHandler) {
-      return viewerRef.current.calculatePartAreaHandler(partName);
+      const partData = viewerRef.current.calculatePartAreaHandler(partName);
+      if (partData) {
+        setSelectedPartName(partName);
+        setMeasurements(prev => ({ 
+          ...prev, 
+          selectedPartArea: partData.area || 0,
+          selectedPartVolume: partData.volume || 0,
+          selectedPartDimensions: partData.dimensions || { width: 0, height: 0, depth: 0 }
+        }));
+        setShowMeasurements(true);
+      }
+      return partData?.area || 0;
     }
     return 0;
   };
@@ -96,6 +131,21 @@ const Index = () => {
   const handleFitToWindow = () => {
     if (viewerRef.current && viewerRef.current.fitToWindowHandler) {
       viewerRef.current.fitToWindowHandler();
+    }
+  };
+  
+  const handleSelectPart = (partName: string) => {
+    handleCalculatePartArea(partName);
+  };
+  
+  const handleSaveThumbnail = () => {
+    if (viewerRef.current && viewerRef.current.getRenderer && file) {
+      const renderer = viewerRef.current.getRenderer();
+      if (renderer) {
+        const thumbnail = generateThumbnail(renderer);
+        console.log('Thumbnail generated:', thumbnail ? 'Success' : 'Failed');
+        // You could save this thumbnail with the model metadata
+      }
     }
   };
 
@@ -140,6 +190,8 @@ const Index = () => {
                 onToggleCameraType={handleToggleCameraType}
                 onFitToWindow={handleFitToWindow}
                 cameraType={cameraType}
+                selectedPart={selectedPartName}
+                onSelectPart={handleSelectPart}
               />
             )}
           </div>
@@ -150,6 +202,16 @@ const Index = () => {
               onModelLoaded={handleModelLoaded}
               onLoadingChange={setIsLoading}
               ref={viewerRef}
+              onPartSelected={handleSelectPart}
+            />
+            
+            <MeasurementsPanel 
+              visible={showMeasurements && isModelLoaded}
+              surfaceArea={measurements.surfaceArea}
+              selectedPartArea={selectedPartName ? measurements.selectedPartArea : undefined}
+              selectedPartName={selectedPartName}
+              selectedPartVolume={selectedPartName ? measurements.selectedPartVolume : undefined}
+              selectedPartDimensions={selectedPartName ? measurements.selectedPartDimensions : undefined}
             />
             
             {!file && (
