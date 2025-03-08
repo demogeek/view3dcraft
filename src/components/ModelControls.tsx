@@ -45,8 +45,6 @@ interface ModelControlsProps {
   onToggleCameraType?: () => void;
   onFitToWindow?: () => void;
   cameraType?: string;
-  selectedPart?: string; // Added missing prop
-  onSelectPart?: (partName: string) => void; // Added missing prop
 }
 
 const ModelControls: React.FC<ModelControlsProps> = ({

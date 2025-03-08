@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import Features from './pages/Features';
 import Documentation from './pages/Documentation';
@@ -9,9 +9,8 @@ import './App.css';
 import { Toaster } from './components/ui/toaster';
 
 function App() {
-  // Using basename to ensure correct asset path resolution
   return (
-    <Router basename={import.meta.env.MODE === 'production' ? '/' : '/'}>
+    <Router>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/features" element={<Features />} />
